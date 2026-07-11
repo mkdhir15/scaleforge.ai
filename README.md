@@ -46,5 +46,3 @@ Brand tokens are centralized and consistent across every page and component — 
 - Mobile-first responsive layout; heavy animation degrades gracefully or falls back to static alternatives on lower-powered devices
 
 ---
-
-## Project structure

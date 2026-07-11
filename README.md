@@ -1,16 +1,50 @@
-# React + Vite
+# ScaleForge.AI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The official marketing website for **ScaleForge.AI**, an AI automation and web development agency helping small and medium businesses automate repetitive work and launch premium web presences.
 
-Currently, two official plugins are available:
+This is a production frontend built to feel like it belongs to a funded product company rather than a templated agency site — dark theme, restrained motion, and a component architecture that keeps animation primitives, composed UI, and route-level pages cleanly separated.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Tech stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Layer | Choice |
+|---|---|
+| Framework | React 19 + Vite |
+| Styling | Tailwind CSS v4 |
+| Routing | React Router DOM |
+| Scroll animation | GSAP + ScrollTrigger |
+| Micro-interactions | Framer Motion |
+| Hero visual | Three.js (custom WebGL shader) |
+| Icons | Lucide React, React Icons |
+| Backend / persistence | Supabase (Postgres + Edge Functions) |
+| Transactional email | Resend |
+| Hosting target | Vercel |
 
-## Expanding the ESLint configuration
+Every service in this stack runs on a free tier — no paid infrastructure required to run or deploy this project.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## Design system
+
+Brand tokens are centralized and consistent across every page and component — no ad hoc colors or fonts anywhere in the codebase.
+
+```css
+--bg-base:       #0A0A0F   /* base background */
+--accent-indigo: #6C5CE7   /* primary accent */
+--accent-teal:   #00D9C0   /* secondary accent */
+--text-primary:  #FFFFFF
+--text-muted:    #A0A0AC
+```
+
+**Typography:** Space Grotesk for headings/display, Inter for body text.
+
+**Design principles:**
+- One dominant animated moment per page — motion is restrained and intentional, not omnipresent
+- No stock photography — abstract shapes, gradients, and real UI over generic imagery
+- No fabricated statistics, client counts, or testimonials — placeholder content is always clearly labeled as such until replaced with real data
+- Mobile-first responsive layout; heavy animation degrades gracefully or falls back to static alternatives on lower-powered devices
+
+---
+
+## Project structure

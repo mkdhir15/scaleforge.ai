@@ -1,0 +1,28 @@
+/* ─── GlareHover ─── */
+.glare-hover {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  border-radius: inherit;
+}
+
+/* Glare overlay — only when active (not disabled) */
+.glare-hover--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    180px circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.18),
+    transparent 60%
+  );
+}
+
+.glare-hover--active:hover::after {
+  opacity: 1;
+}

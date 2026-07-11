@@ -1,0 +1,96 @@
+/* ─── Dock ─── */
+.dock {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.625rem;
+  background: rgba(18, 18, 26, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(30, 30, 46, 0.7);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(108, 92, 231, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.dock:hover {
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(108, 92, 231, 0.12);
+}
+
+/* ─── Item ─── */
+.dock__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+  color: var(--color-text-muted, #A0A0AC);
+  background: transparent;
+  border: none;
+  text-decoration: none;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.dock__item:hover {
+  background: rgba(108, 92, 231, 0.15);
+  color: var(--color-text-primary, #fff);
+}
+
+/* ─── Icon ─── */
+.dock__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  font-size: 1.125rem;
+}
+
+/* ─── Label — hidden by default, expands on dock hover ─── */
+.dock__label {
+  display: block;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease 0.05s;
+}
+
+.dock--expanded .dock__label {
+  max-width: 12rem;
+  opacity: 1;
+}
+
+/* ─── Mobile tweaks ─── */
+@media (max-width: 640px) {
+  .dock {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.5rem;
+  }
+
+  .dock__item {
+    padding: 0.5rem;
+  }
+
+  .dock__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1rem;
+  }
+}

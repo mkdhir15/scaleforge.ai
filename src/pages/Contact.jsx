@@ -1,125 +1,53 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Send, ArrowRight, CheckCircle, AlertCircle, Phone, Mail } from 'lucide-react';
-import emailjs from '@emailjs/browser';
 import AnimatedContent from '../ui/AnimatedContent';
 import SectionHeading from '../components/SectionHeading';
 import CTAButton from '../components/CTAButton';
 
-/* ──────────────────────────────────────────────
-   DUAL SUBMISSION: Supabase (DB) + EmailJS (email notification)
-   
-   Both are required for full functionality:
-   • Supabase saves every lead to a database table (persistence)
-   • EmailJS sends a notification email to mkdhirsystems@gmail.com
-   
-   See SETUP_GUIDE.md at project root for activation steps.
-   ────────────────────────────────────────────── */
-
-// ── Supabase config ──
+// Initialize Supabase Client configs for Edge Function invocation
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const supabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
-
-// ── EmailJS config ──
-const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID || '';
-const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || '';
-const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || '';
-const emailjsConfigured = Boolean(EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY);
-
-const bothConfigured = supabaseConfigured && emailjsConfigured;
-const eitherConfigured = supabaseConfigured || emailjsConfigured;
+const isConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 /**
- * Save lead to Supabase database.
- * Returns { success: true } on insert, throws on failure.
- */
-async function saveToDatabase(data) {
-  if (!supabaseConfigured) {
-    console.warn('[Contact] Supabase not configured — skipping DB insert.');
-    return { success: false, skipped: true };
-  }
-
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/contact_submissions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({
-      name: data.name,
-      email: data.email,
-      company: data.company || null,
-      message: data.message,
-      service_interested: data.service || null,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Database save failed: ${err}`);
-  }
-
-  return { success: true };
-}
-
-/**
- * Send email notification via EmailJS.
- * Sends all lead details to mkdhirsystems@gmail.com.
- */
-async function sendEmailNotification(data) {
-  if (!emailjsConfigured) {
-    console.warn('[Contact] EmailJS not configured — skipping email notification.');
-    return { success: false, skipped: true };
-  }
-
-  const templateParams = {
-    from_name: data.name,
-    from_email: data.email,
-    company: data.company || 'Not provided',
-    service: data.service || 'Not specified',
-    message: data.message,
-    to_email: 'mkdhirsystems@gmail.com',
-  };
-
-  await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY);
-  return { success: true };
-}
-
-/**
- * Submit lead: saves to DB AND sends email notification.
- * Both run in parallel. DB save is the primary requirement;
- * email notification is secondary but important.
+ * Submits contact lead directly to your Supabase Edge Function handler.
+ * The Edge Function takes care of rate limiting, database insertion, and sending notifications.
  */
 async function submitContactForm(data) {
-  if (!eitherConfigured) {
-    console.warn('[Contact] Neither Supabase nor EmailJS configured. Simulating success for dev.');
-    return { dbSaved: false, emailSent: false, simulated: true };
+  if (!isConfigured) {
+    console.warn('[Contact] Supabase credentials missing — simulating success for dev.');
+    return { success: true, simulated: true };
   }
 
-  const results = await Promise.allSettled([
-    saveToDatabase(data),
-    sendEmailNotification(data),
-  ]);
+  // Call your deployed Supabase Edge Function directly via HTTP POST
+  // Inside your React Contact Component file:
+const res = await fetch(`${SUPABASE_URL}/functions/v1/super-handler`, { // <-- Changed to match your live function
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+  },
+  body: JSON.stringify({
+    senderName: data.name,
+    senderEmail: data.email,
+    companyName: data.company || 'Not provided',
+    serviceInterested: data.service || 'Not specified',
+    messageBody: data.message,
+    fax_number: data.fax_number || '' 
+  }),
+});
+  const result = await res.json().catch(() => ({}));
 
-  const dbResult = results[0];
-  const emailResult = results[1];
-
-  const dbSaved = dbResult.status === 'fulfilled' && dbResult.value?.success;
-  const emailSent = emailResult.status === 'fulfilled' && emailResult.value?.success;
-
-  // Log any failures for debugging
-  if (dbResult.status === 'rejected') console.error('[Contact] DB save failed:', dbResult.reason);
-  if (emailResult.status === 'rejected') console.error('[Contact] Email send failed:', emailResult.reason);
-
-  // If BOTH fail, throw so the user sees an error
-  if (!dbSaved && !emailSent && !results.some(r => r.value?.skipped)) {
-    throw new Error('Submission failed. Please try again or contact us directly at mkdhirsystems@gmail.com');
+  if (!res.ok) {
+    // Check if the response failed specifically due to a 429 Rate Limit block
+    if (res.status === 429) {
+      throw new Error('Too many requests. Please wait an hour before submitting another message.');
+    }
+    throw new Error(result.error || 'Submission failed. Please try again or contact us directly.');
   }
 
-  return { dbSaved, emailSent };
+  return result;
 }
 
 /* ── Form options ── */
@@ -137,7 +65,7 @@ const SERVICES_OPTIONS = [
   'Not sure yet — need advice',
 ];
 
-const initialForm = { name: '', email: '', company: '', message: '', service: '' };
+const initialForm = { name: '', email: '', company: '', message: '', service: '', fax_number: '' };
 
 const Contact = () => {
   const [form, setForm] = useState(initialForm);
@@ -242,6 +170,17 @@ const Contact = () => {
                       </div>
                     )}
 
+                    {/* Honeypot Field — completely invisible to humans but catches bots */}
+                    <input
+                      type="text"
+                      name="fax_number"
+                      value={form.fax_number}
+                      onChange={handleChange}
+                      style={{ display: 'none !important', position: 'absolute', width: '0', height: '0', opacity: '0', zIndex: '-1' }}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+
                     {/* Name */}
                     <div>
                       <label className="block text-sm font-medium text-text-primary mb-1.5">Name *</label>
@@ -332,17 +271,6 @@ const Contact = () => {
                     >
                       {status === 'sending' ? 'Sending…' : 'Send Message'}
                     </CTAButton>
-
-                    {!bothConfigured && (
-                      <p className="text-xs text-center" style={{ color: 'var(--color-text-dimmed)', fontStyle: 'italic' }}>
-                        {!eitherConfigured
-                          ? 'Note: Form backend not yet connected — submissions are simulated in development.'
-                          : !supabaseConfigured
-                            ? 'Note: Database not yet connected — emails will send but leads are not persisted.'
-                            : 'Note: Email notifications not yet configured — leads are saved but email alerts are disabled.'
-                        }
-                      </p>
-                    )}
                   </form>
                 )}
               </div>
